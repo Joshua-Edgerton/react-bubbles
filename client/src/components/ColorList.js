@@ -1,13 +1,13 @@
 import React, { useState } from "react";
-import axios from "axios";
+import { axiosWithAuth } from "../utils/axiosWithAuth"
+import AddColorForm from "./AddColorForm"
 
 const initialColor = {
   color: "",
   code: { hex: "" }
 };
 
-const ColorList = ({ colors, updateColors }) => {
-  console.log(colors);
+const ColorList = ({ colors, updateColors, history }) => {
   const [editing, setEditing] = useState(false);
   const [colorToEdit, setColorToEdit] = useState(initialColor);
 
@@ -18,13 +18,25 @@ const ColorList = ({ colors, updateColors }) => {
 
   const saveEdit = e => {
     e.preventDefault();
-    // Make a put request to save your updated color
-    // think about where will you get the id from...
-    // where is is saved right now?
+    axiosWithAuth().put(`colors/${colorToEdit.id}`, colorToEdit)
+      .then(res => {
+        updateColors(colors.map(color => 
+          color.id === colorToEdit.id ? res.data : color))
+          setEditing(false)
+        })
+      .catch(err => console.log(".PUT request failed", err))
+      
+    setColorToEdit({
+      color: "",
+      code: { hex: "" }
+    })
   };
+  console.log(colors);
 
   const deleteColor = color => {
-    // make a delete request to delete this color
+    axiosWithAuth().delete(`colors/${color.id}`)
+      .then(res => updateColors(res.data))
+      .catch(err => console.log('.DELETE request failed', err))
   };
 
   return (
@@ -34,12 +46,8 @@ const ColorList = ({ colors, updateColors }) => {
         {colors.map(color => (
           <li key={color.color} onClick={() => editColor(color)}>
             <span>
-              <span className="delete" onClick={e => {
-                    e.stopPropagation();
-                    deleteColor(color)
-                  }
-                }>
-                  x
+              <span className="delete" onClick={() => deleteColor(color)}>
+                x
               </span>{" "}
               {color.color}
             </span>
@@ -80,8 +88,8 @@ const ColorList = ({ colors, updateColors }) => {
           </div>
         </form>
       )}
-      <div className="spacer" />
-      {/* stretch - build another form here to add a color */}
+
+      <AddColorForm updateColors={updateColors} />
     </div>
   );
 };
